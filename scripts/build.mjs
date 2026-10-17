@@ -5,6 +5,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { build } from 'esbuild';
+import { parseManifestJson } from '@openchamber/sdk/schemas';
 
 import { convertRatModel, ratModelModule } from './rat-model.mjs';
 
@@ -45,6 +46,26 @@ const thirdPartyLicenses = async (packages) => {
 };
 
 export const buildExtension = async () => {
+  const source = await readFile(path.join(root, 'package.json'), 'utf8');
+  const parsed = parseManifestJson(source);
+  if (!parsed.ok) throw new Error(`Invalid extension manifest: ${parsed.message}`);
+  const { name, version, description, license, openchamber } = JSON.parse(source);
+  const panel = openchamber.contributes.panel;
+  // The Git install starts at the repository root; the ZIP starts at extension/.
+  const manifest = {
+    name, version, description, license,
+    openchamber: {
+      ...openchamber,
+      contributes: {
+        ...openchamber.contributes,
+        panel: {
+          ...panel,
+          icon: path.posix.relative('extension', panel.icon),
+          entry: path.posix.relative('extension', panel.entry),
+        },
+      },
+    },
+  };
   const model = await convertRatModel(path.join(root, 'assets', 'low-poly-rat.zip'));
 
   await rm(outDir, { recursive: true, force: true });
@@ -64,7 +85,8 @@ export const buildExtension = async () => {
     plugins: [ratModelPlugin(model)],
   });
 
-  for (const file of ['package.json', 'icon.svg', 'panel/index.html']) {
+  await writeFile(path.join(outDir, 'package.json'), `${JSON.stringify(manifest, null, 2)}\n`);
+  for (const file of ['icon.svg', 'panel/index.html']) {
     await copyFile(path.join(root, 'extension', file), path.join(outDir, file));
   }
   for (const file of ['LICENSE', 'NOTICE.md']) {
@@ -74,6 +96,10 @@ export const buildExtension = async () => {
     path.join(outDir, 'THIRD_PARTY_LICENSES.txt'),
     await thirdPartyLicenses(bundledPackages(result.metafile)),
   );
+  // OpenChamber never runs npm or builds sources when installing a Git URL.
+  // Keep these prebuilt runtime files in Git alongside the root manifest.
+  await copyFile(path.join(outDir, 'panel', 'main.js'), path.join(root, 'extension', 'panel', 'main.js'));
+  await copyFile(path.join(outDir, 'THIRD_PARTY_LICENSES.txt'), path.join(root, 'THIRD_PARTY_LICENSES.txt'));
 
   return { outDir, model };
 };

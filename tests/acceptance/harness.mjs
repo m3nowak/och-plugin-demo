@@ -56,7 +56,7 @@ const waitForHttp = async (url, timeoutMs) => {
  * port, so the tests never touch the user's own instance or extensions.
  * `OPENCHAMBER_BIN` selects the executable (default: `openchamber` on PATH).
  */
-export const startHost = async () => {
+export const startHost = async ({ env = {} } = {}) => {
   const bin = process.env.OPENCHAMBER_BIN ?? 'openchamber';
   const { stdout } = await promisify(execFile)(bin, ['--version']);
   const version = stdout.trim();
@@ -64,7 +64,7 @@ export const startHost = async () => {
   const port = await freePort();
   const child = spawn(bin, ['serve', '--foreground', '--host', '127.0.0.1', '--port', String(port)], {
     cwd: home,
-    env: { ...process.env, HOME: home, OPENCHAMBER_DATA_DIR: path.join(home, 'data') },
+    env: { ...process.env, ...env, HOME: home, OPENCHAMBER_DATA_DIR: path.join(home, 'data') },
     stdio: 'ignore',
     detached: true,
   });

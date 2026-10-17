@@ -17,6 +17,17 @@ slowly in 3D.
 Rat is an OpenChamber extension, not an OpenCode plugin. It was built and
 tested against **OpenChamber web 2.3.3**.
 
+## Install from Git
+
+1. In OpenChamber, open **Settings → Extensions**.
+2. Paste `https://github.com/m3nowak/och-plugin-demo.git` into the
+   **Folder, ZIP, or URL** field and press **Add**.
+3. Close Settings and click **Rat** on the rail.
+
+The repository includes the prebuilt panel and its dependency notices. Git
+installation does not require Node.js, npm, or a build. The root `package.json`
+is the extension manifest; installing only the source files is not enough.
+
 ## Install the prebuilt ZIP
 
 You do not need a development toolchain for this.
@@ -52,17 +63,25 @@ npm ci            # installs the locked dependencies
 npm run package   # builds build/rat/ and writes dist/rat-1.0.0.zip
 ```
 
-`npm run build` builds only the folder. The build reads the original artwork
+`npm run build` skips ZIP packaging. The build reads the original artwork
 archive from `assets/low-poly-rat.zip` and checks its SHA-256 before using it.
 It converts the model and bundles everything into `build/rat/panel/main.js`;
 see [NOTICE.md](NOTICE.md) for what the conversion changes. npm needs network
 access for `npm ci`. Nothing else is downloaded, and the extension never goes
 online at runtime.
 
+Both build commands also refresh `extension/panel/main.js` and
+`THIRD_PARTY_LICENSES.txt` for Git installation. Commit those generated files
+with source changes and the rebuilt ZIP. The root `package.json` is the single
+manifest source; the build generates the ZIP's manifest with shorter asset
+paths and without development scripts or dependencies.
+
 Packaging is deterministic: the same sources give a byte-identical ZIP.
 `npm run verify:clean-build` clones the committed repository into a temporary
 folder, runs `npm ci` and packages it there. It then checks the result against
-the committed ZIP.
+the committed ZIP, Git bundle and dependency notices.
+Run it after committing all generated files and before pushing. Unlike the
+acceptance tests, it checks committed files rather than working-tree changes.
 
 ### Install from a local folder
 
@@ -74,10 +93,10 @@ to load the new `panel/main.js`.
 
 ## How it works
 
-- `extension/package.json` is the manifest. It declares OpenChamber
+- The root `package.json` is the manifest. It declares OpenChamber
   `apiVersion` 1, a `rat` panel named "Rat" with the icon `icon.svg`, and the
-  entry `panel/index.html`. It requires OpenChamber 2.3.3 or later and asks
-  for no capabilities.
+  entry `panel/index.html` under `extension/` for Git installs, or at the ZIP
+  root. It requires OpenChamber 2.3.3 or later and asks for no capabilities.
 - `src/panel/main.ts` is the whole panel. esbuild bundles it into one classic
   (IIFE) script, as OpenChamber requires, together with three.js, the
   OpenChamber SDK, the model's vertex data and its two PNG textures as
@@ -98,10 +117,16 @@ to load the new `panel/main.js`.
 
 ## Tests
 
-The acceptance tests install the packaged ZIP into a real OpenChamber and
-drive it with Chromium. Each suite starts its own OpenChamber with a
-temporary home and data folder on a free loopback port. Your own instance
-and its extensions are not touched.
+The acceptance tests install the packaged ZIP and a clean Git checkout into
+real OpenChamber hosts and drive them with Chromium. The Git test uses a
+temporary repository and an isolated Git URL rewrite, without contacting a
+remote, installing dependencies, or building inside the checkout. Each suite
+starts its own OpenChamber with a temporary home and data folder on a free
+loopback port. Your own instance and its extensions are not touched.
+The Git snapshot includes current non-ignored working-tree files, including
+new files, so the test can run before a commit. It does not test GitHub's
+current branch; Git URL users receive the fix only after all changes are
+committed and pushed.
 
 ```bash
 npx playwright-core install chromium-headless-shell   # once

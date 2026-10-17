@@ -17,7 +17,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const FIXED_MTIME = new Date(2026, 0, 1, 0, 0, 0);
 
 const extensionVersion = async () => (
-  JSON.parse(await readFile(path.join(root, 'extension', 'package.json'), 'utf8')).version
+  JSON.parse(await readFile(path.join(root, 'package.json'), 'utf8')).version
 );
 
 /** Where `npm run package` writes the installable archive. */

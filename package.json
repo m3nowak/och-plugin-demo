@@ -4,7 +4,21 @@
   "private": true,
   "description": "Rat, a demo OpenChamber extension: a Rail panel with the Low Poly Rat model turning in 3D.",
   "type": "module",
-  "license": "MIT",
+  "license": "MIT AND CC-BY-4.0",
+  "openchamber": {
+    "apiVersion": 1,
+    "engines": {
+      "openchamber": ">=2.3.3"
+    },
+    "contributes": {
+      "panel": {
+        "id": "rat",
+        "name": "Rat",
+        "icon": "extension/icon.svg",
+        "entry": "extension/panel/index.html"
+      }
+    }
+  },
   "engines": {
     "node": ">=24.14.0"
   },

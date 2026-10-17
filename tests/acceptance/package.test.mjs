@@ -17,11 +17,18 @@ import { AUTHOR_URL, LICENSE_URL, MODEL_URL, root } from './harness.mjs';
 describe('installable ZIP', () => {
   let zipBytes;
   let files;
+  let gitBundle;
+  let gitNotices;
+  let gitManifest;
   const text = (name) => new TextDecoder().decode(files[name]);
 
   before(async () => {
     zipBytes = await readFile(await distZipPath());
     files = unzipSync(new Uint8Array(zipBytes));
+    // Read before any build: rebuilding must not conceal stale Git artifacts.
+    gitBundle = await readFile(path.join(root, 'extension', 'panel', 'main.js'), 'utf8');
+    gitNotices = await readFile(path.join(root, 'THIRD_PARTY_LICENSES.txt'), 'utf8');
+    gitManifest = parseManifestJson(await readFile(path.join(root, 'package.json'), 'utf8'));
   });
 
   test('matches a fresh build of the current sources', async () => {
@@ -65,6 +72,29 @@ describe('installable ZIP', () => {
     assert.match(html, /<script src="\.\/main\.js"><\/script>/);
     assert.doesNotMatch(html, /type="module"/);
     assert.doesNotMatch(text('panel/main.js'), /^\s*(import|export)\s/m);
+  });
+
+  test('ships the same manifest and runtime assets for Git and ZIP installs', async () => {
+    const zipManifest = parseManifestJson(text('package.json'));
+    assert.equal(gitManifest.ok, true, JSON.stringify(gitManifest));
+    assert.equal(zipManifest.ok, true, JSON.stringify(zipManifest));
+    assert.equal(gitManifest.version, zipManifest.version);
+    assert.deepEqual(gitManifest.manifest, {
+      ...zipManifest.manifest,
+      contributes: {
+        ...zipManifest.manifest.contributes,
+        panel: {
+          ...zipManifest.manifest.contributes.panel,
+          icon: 'extension/icon.svg',
+          entry: 'extension/panel/index.html',
+        },
+      },
+    });
+    assert.equal(gitBundle, text('panel/main.js'), 'Git bundle is stale: run npm run package');
+    assert.equal(gitNotices, text('THIRD_PARTY_LICENSES.txt'), 'Git notices are stale');
+    for (const file of ['icon.svg', 'panel/index.html']) {
+      assert.equal(await readFile(path.join(root, 'extension', file), 'utf8'), text(file));
+    }
   });
 
   test('carries the model attribution in the panel itself', () => {

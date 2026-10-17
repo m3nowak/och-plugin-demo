@@ -13,9 +13,9 @@ was not checked.
 | Node.js | 24.22.0 (npm 12.2.1) |
 | Browser | Chrome for Testing headless shell 156.0.8078.4 (Playwright 1.64.1) |
 | WebGL path | ANGLE on EGL, Mesa radeonsi (AMD Radeon Vega 11), via `--use-angle=gl-egl` |
-| Artifact | `dist/rat-1.0.0.zip`, SHA-256 `7cbad4661def995a071f9d8b50371ac3d84a02863eaff4c1de794b46df695aa1` |
+| Artifact | `dist/rat-1.0.0.zip`, SHA-256 `c6789bbf3df9ddb76fbe4defef3d07bf905342eaa4eac39106d2426e683b08f8` |
 
-## Automated checks (`npm test`, 27 passing)
+## Automated checks (`npm test`, 29 passing)
 
 `tests/acceptance/package.test.mjs` checks the ZIP itself:
 
@@ -24,10 +24,30 @@ was not checked.
   script, `LICENSE`, `NOTICE.md` and `THIRD_PARTY_LICENSES.txt`.
 - The manifest passes the SDK's own parser: API version 1, panel `rat`
   named "Rat", OpenChamber `>=2.3.3`, no capabilities.
+- The root Git manifest declares the same extension as the ZIP, with paths
+  relative to the repository root. Its prebuilt script, HTML, icon and
+  third-party notices match the ZIP. The script and notices are read before
+  rebuilding, so a build cannot conceal stale Git artifacts.
 - The panel HTML credits the artwork with the model, author and license
   links. `LICENSE` is MIT and excludes the artwork. `NOTICE.md` records the
   source checksum, the changes, the omitted mask map and the absence of
   endorsement. The licenses of three.js and the SDK are included.
+
+`tests/acceptance/git-install.test.mjs` snapshots the non-ignored working-tree
+files, including new files, into a new Git repository without `node_modules/`
+or `build/`. The real host Git installer clones it through a test-only Git URL
+rewrite, without a remote connection, npm install or build in that checkout.
+The test checks that
+installation succeeds as source `git`, the prebuilt panel loads, the textured
+rat draws and rotates, attribution is present, and there are no page errors.
+External browser requests are blocked; the panel requests only its own assets.
+This checks local changes before a commit, not the current GitHub branch.
+`verify:clean-build` separately checks committed artifacts; it must pass after
+all generated files are committed and before they are pushed.
+
+The regression test first failed with `invalid-manifest`. Adding the root
+manifest alone changed the failure to `missing-build`. Shipping the prebuilt
+panel fixes both. The original ZIP-only checks did not cover Git installation.
 
 `tests/acceptance/panel.test.mjs` installs that ZIP through **Settings →
 Extensions → Browse ZIP archive** in a real host. All browser traffic to
