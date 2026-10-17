@@ -1,0 +1,31 @@
+{
+  "name": "rat-openchamber-extension",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Rat, a demo OpenChamber extension: a Rail panel with the Low Poly Rat model turning in 3D.",
+  "type": "module",
+  "license": "MIT",
+  "engines": {
+    "node": ">=24.14.0"
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "package": "node scripts/package.mjs",
+    "typecheck": "tsc --noEmit",
+    "test": "node --test --test-concurrency=1 \"tests/acceptance/*.test.mjs\"",
+    "verify:clean-build": "node scripts/verify-clean-build.mjs"
+  },
+  "dependencies": {
+    "@openchamber/sdk": "2.3.3",
+    "three": "0.186.1"
+  },
+  "devDependencies": {
+    "@types/node": "26.6.5",
+    "@types/three": "0.186.0",
+    "esbuild": "0.28.2",
+    "fflate": "0.8.3",
+    "playwright-core": "1.64.1",
+    "pngjs": "7.0.0",
+    "typescript": "7.0.2"
+  }
+}
