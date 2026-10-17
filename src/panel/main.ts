@@ -195,9 +195,10 @@ const start = async () => {
   // A closed rail panel stays mounted at opacity 0, partly clipped by the
   // narrower column the host leaves behind, and an open one is never clipped.
   // So the panel counts as shown only while no part of the stage is cut off.
-  const intersectionObserver = new IntersectionObserver(([entry]) => {
-    const { boundingClientRect: box, intersectionRect: shown } = entry;
-    inView = entry.isIntersecting && box.width - shown.width < 1 && box.height - shown.height < 1;
+  const intersectionObserver = new IntersectionObserver((entries) => {
+    // One callback can carry several queued changes; only the newest counts.
+    const { boundingClientRect: box, intersectionRect: shown, isIntersecting } = entries[entries.length - 1];
+    inView = isIntersecting && box.width - shown.width < 1 && box.height - shown.height < 1;
     updateLoop();
   }, { threshold: [0, 0.5, 0.9, 0.99, 0.995, 1] });
   intersectionObserver.observe(stage);

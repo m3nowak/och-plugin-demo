@@ -11,11 +11,8 @@ import { parseManifestJson } from '@openchamber/sdk/schemas';
 import { unzipSync } from 'fflate';
 
 import { distZipPath, packageExtension } from '../../scripts/package.mjs';
-import { root } from './harness.mjs';
+import { AUTHOR_URL, LICENSE_URL, MODEL_URL, root } from './harness.mjs';
 
-const MODEL_URL = 'https://sketchfab.com/3d-models/low-poly-rat-dd63402df69742e39e989801f282e58a';
-const AUTHOR_URL = 'https://sketchfab.com/tylerlazzareschi';
-const LICENSE_URL = 'https://creativecommons.org/licenses/by/4.0/';
 
 describe('installable ZIP', () => {
   let zipBytes;
@@ -49,7 +46,7 @@ describe('installable ZIP', () => {
     ]);
   });
 
-  test('declares an API version 1 Rat panel for OpenChamber 2.3.3', () => {
+  test('declares an API version 1 Rail panel named Rat for OpenChamber 2.3.3', () => {
     const result = parseManifestJson(text('package.json'));
     assert.equal(result.ok, true, JSON.stringify(result));
     assert.equal(result.manifest.apiVersion, 1);
@@ -70,7 +67,7 @@ describe('installable ZIP', () => {
     assert.doesNotMatch(text('panel/main.js'), /^\s*(import|export)\s/m);
   });
 
-  test('credits the artwork in the panel itself', () => {
+  test('carries the model attribution in the panel itself', () => {
     const html = text('panel/index.html');
     for (const expected of ['Low Poly Rat', 'Tyler Lazzareschi', 'CC BY 4.0', MODEL_URL, AUTHOR_URL, LICENSE_URL]) {
       assert.ok(html.includes(expected), `panel/index.html lacks ${expected}`);
@@ -84,7 +81,7 @@ describe('installable ZIP', () => {
     assert.match(license, /CC BY 4\.0/);
   });
 
-  test('records the artwork attribution and every change made to it', () => {
+  test('records the model attribution and every change made to the artwork', () => {
     const notice = text('NOTICE.md');
     for (const expected of ['Low Poly Rat', 'Tyler Lazzareschi', MODEL_URL, AUTHOR_URL, LICENSE_URL,
       'b340026593dd2d8f86f85853715d7572c6e49c5fe28c31c67398ed1a311a1129', 'MaskMap', 'has not reviewed or endorsed']) {

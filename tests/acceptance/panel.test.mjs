@@ -8,7 +8,10 @@ import path from 'node:path';
 import { after, before, describe, test } from 'node:test';
 
 import {
+  AUTHOR_URL,
   EXPECTED_HOST_VERSION,
+  LICENSE_URL,
+  MODEL_URL,
   analyseScene,
   closeSettings,
   contrast,
@@ -18,18 +21,16 @@ import {
   newContext,
   openRat,
   openSettingsSection,
+  isRatFrame,
   parseColor,
   ratFrame,
   ratRailButton,
   relativeLuminance,
   silhouetteChange,
   startHost,
-  watch,
+  sampleDrawing,
 } from './harness.mjs';
 
-const MODEL_URL = 'https://sketchfab.com/3d-models/low-poly-rat-dd63402df69742e39e989801f282e58a';
-const AUTHOR_URL = 'https://sketchfab.com/tylerlazzareschi';
-const LICENSE_URL = 'https://creativecommons.org/licenses/by/4.0/';
 /** Longest host panel open/close animation, with room to settle. */
 const SETTLE_MS = 800;
 
@@ -181,11 +182,11 @@ describe('Rat installed in OpenChamber', () => {
     assert.deepEqual(links, [MODEL_URL, AUTHOR_URL, LICENSE_URL]);
   });
 
-  test('keeps the attribution readable below the scene', async () => {
+  test('keeps the model attribution readable below the scene', async () => {
     assertAttribution(await attributionState(frame), 'light theme');
   });
 
-  test('opens attribution links through the host', async () => {
+  test('opens model attribution links through the host', async () => {
     // The tests block external network access, so the new tab's navigation is
     // refused; that it was attempted is what matters here.
     const opened = session.context.waitForEvent('page', { timeout: 5_000 });
@@ -243,28 +244,28 @@ describe('Rat installed in OpenChamber', () => {
   });
 
   test('stops drawing while the rail panel is hidden and resumes with one loop', async () => {
-    assertDrawing(await watch(page, frame, 1000), 'before hiding');
+    assertDrawing(await sampleDrawing(page, frame, 1000), 'before hiding');
 
     await ratRailButton(page).click();
     await page.waitForTimeout(SETTLE_MS);
-    assertStopped(await watch(page, frame, 1500), 'closed from the rail');
+    assertStopped(await sampleDrawing(page, frame, 1500), 'closed from the rail');
     await ratRailButton(page).click();
     await page.waitForTimeout(SETTLE_MS);
-    assertDrawing(await watch(page, frame, 1000), 'reopened from the rail');
+    assertDrawing(await sampleDrawing(page, frame, 1000), 'reopened from the rail');
 
     await ratCard().getByRole('button', { name: 'Close panel' }).click();
     await page.waitForTimeout(SETTLE_MS);
-    assertStopped(await watch(page, frame, 1500), 'closed from the panel');
+    assertStopped(await sampleDrawing(page, frame, 1500), 'closed from the panel');
     await ratRailButton(page).click();
     await page.waitForTimeout(SETTLE_MS);
-    assertDrawing(await watch(page, frame, 1000), 'reopened after closing');
+    assertDrawing(await sampleDrawing(page, frame, 1000), 'reopened after closing');
 
     await page.getByRole('button', { name: 'Browser', exact: true }).click();
     await page.waitForTimeout(SETTLE_MS);
-    assertStopped(await watch(page, frame, 1500), 'another rail panel shown');
+    assertStopped(await sampleDrawing(page, frame, 1500), 'another rail panel shown');
     await ratRailButton(page).click();
     await page.waitForTimeout(SETTLE_MS);
-    assertDrawing(await watch(page, frame, 1000), 'back from another rail panel');
+    assertDrawing(await sampleDrawing(page, frame, 1000), 'back from another rail panel');
     assertFramedRat(await sceneOf(frame), 'after hide and show');
   });
 
@@ -277,9 +278,9 @@ describe('Rat installed in OpenChamber', () => {
       document.dispatchEvent(new Event('visibilitychange'));
     }, state);
     await setVisibility('hidden');
-    assertStopped(await watch(page, frame, 1500), 'page in the background');
+    assertStopped(await sampleDrawing(page, frame, 1500), 'page in the background');
     await setVisibility('visible');
-    assertDrawing(await watch(page, frame, 1000), 'page in the foreground');
+    assertDrawing(await sampleDrawing(page, frame, 1000), 'page in the foreground');
   });
 
   test('docks wherever the host layout controls put it, including the right', async () => {
@@ -287,27 +288,29 @@ describe('Rat installed in OpenChamber', () => {
       await ratRailButton(page).click({ button: 'right' });
       await page.getByRole('menuitem', { name: `Move panel to the ${side}` }).click();
       await page.waitForTimeout(SETTLE_MS);
-      // Moving re-parents the frame, which reloads it; open it if it is closed.
-      const card = ratCard();
-      const shown = await card.count() > 0
-        && await card.evaluate((element) => getComputedStyle(element).opacity === '1' && !element.inert);
-      if (!shown) await ratRailButton(page).click();
-      await page.waitForTimeout(SETTLE_MS);
+      if (await ratRailButton(page).getAttribute('aria-pressed') !== 'true') {
+        await ratRailButton(page).click();
+        await page.waitForTimeout(SETTLE_MS);
+      }
       frame = await ratFrame(page);
       const box = await ratCard().boundingBox();
       const { width } = page.viewportSize();
       return { centre: box.x + box.width / 2, width };
     };
 
-    const left = await dockAndShow('left');
-    assert.ok(left.centre < left.width / 2, 'Rat is not on the left');
-    assertDrawing(await watch(page, frame, 1000), 'docked left');
-    assertFramedRat(await sceneOf(frame), 'docked left');
+    // The move animates the panel's size and position; repeat it, since the
+    // panel must restart however the layout changes arrive.
+    for (const round of [1, 2]) {
+      const left = await dockAndShow('left');
+      assert.ok(left.centre < left.width / 2, 'Rat is not on the left');
+      assertDrawing(await sampleDrawing(page, frame, 1000), `docked left (${round})`);
+      assertFramedRat(await sceneOf(frame), `docked left (${round})`);
 
-    const right = await dockAndShow('right');
-    assert.ok(right.centre > right.width / 2, 'Rat is not on the right');
-    assertDrawing(await watch(page, frame, 1000), 'docked right');
-    assertFramedRat(await sceneOf(frame), 'docked right');
+      const right = await dockAndShow('right');
+      assert.ok(right.centre > right.width / 2, 'Rat is not on the right');
+      assertDrawing(await sampleDrawing(page, frame, 1000), `docked right (${round})`);
+      assertFramedRat(await sceneOf(frame), `docked right (${round})`);
+    }
   });
 
   test('renders after a reload with external network access blocked', async () => {
@@ -315,10 +318,10 @@ describe('Rat installed in OpenChamber', () => {
     await page.reload();
     await page.getByRole('button', { name: 'Settings', exact: true }).waitFor();
     await page.waitForTimeout(2000);
-    frame = page.frames().find((candidate) => candidate.url().includes('/api/guests/rat/'));
-    if (!frame || (await watch(page, frame, 500)).draws === 0) frame = await openRat(page);
+    frame = page.frames().find(isRatFrame);
+    if (!frame || (await sampleDrawing(page, frame, 500)).draws === 0) frame = await openRat(page);
     await page.waitForTimeout(SETTLE_MS);
-    assertDrawing(await watch(page, frame, 1000), 'offline');
+    assertDrawing(await sampleDrawing(page, frame, 1000), 'offline');
     assertFramedRat(await sceneOf(frame), 'offline');
     assert.ok(session.ratRequests.length > 0, 'no Rat requests were observed');
     for (const url of session.ratRequests) {
@@ -333,7 +336,7 @@ describe('Rat installed in OpenChamber', () => {
       const reducedPage = await reduced.context.newPage();
       await reducedPage.goto(host.url);
       await reducedPage.getByRole('button', { name: 'Settings', exact: true }).waitFor();
-      let reducedFrame = reducedPage.frames().find((candidate) => candidate.url().includes('/api/guests/rat/'));
+      let reducedFrame = reducedPage.frames().find(isRatFrame);
       reducedFrame ??= await openRat(reducedPage);
       await reducedPage.waitForTimeout(SETTLE_MS);
       assert.equal(await reducedFrame.evaluate(() => matchMedia('(prefers-reduced-motion: reduce)').matches), true);

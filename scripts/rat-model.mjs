@@ -59,7 +59,8 @@ export const convertRatModel = async (archivePath) => {
   geometry.applyMatrix4(mesh.matrixWorld);
 
   // Put the bounding-box centre at the origin, so the turntable spins the rat
-  // about its middle instead of the FBX pivot near its shoulders.
+  // about its middle instead of the FBX node's origin. That centre coincides
+  // with the node's rotation pivot.
   const bounds = new Box3().setFromBufferAttribute(geometry.getAttribute('position'));
   const center = bounds.getCenter(new Vector3());
   geometry.translate(-center.x, -center.y, -center.z);

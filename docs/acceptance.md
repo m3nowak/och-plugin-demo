@@ -13,7 +13,7 @@ was not checked.
 | Node.js | 24.22.0 (npm 12.2.1) |
 | Browser | Chrome for Testing headless shell 156.0.8078.4 (Playwright 1.64.1) |
 | WebGL path | ANGLE on EGL, Mesa radeonsi (AMD Radeon Vega 11), via `--use-angle=gl-egl` |
-| Artifact | `dist/rat-1.0.0.zip`, SHA-256 `62f4782da10fa95352714b1a43688f16da58cc71a1ad6025d44e4b9a005e79b7` |
+| Artifact | `dist/rat-1.0.0.zip`, SHA-256 `7cbad4661def995a071f9d8b50371ac3d84a02863eaff4c1de794b46df695aa1` |
 
 ## Automated checks (`npm test`, 27 passing)
 
@@ -56,8 +56,10 @@ anything but loopback is blocked throughout. It then checks that:
   than browser throttling. Reopening resumes with exactly one callback per
   frame.
 - A page in the background stops drawing and resumes the same way.
-- Moving the panel to the left zone and back to the right, through the
-  host's "Move panel to …" menu, keeps it working in both places.
+- Moving the panel to the left zone and back to the right twice, through the
+  host's "Move panel to …" menu, keeps it working in both places. The move
+  animates the panel's size and position, and the browser can report several
+  of those changes at once; the panel acts on the newest.
 - After a reload, the panel loads and draws offline. Every request from its
   frame went to its own package path on the host.
 - With `prefers-reduced-motion: reduce`, the rat still turns.

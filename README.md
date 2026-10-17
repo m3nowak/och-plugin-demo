@@ -6,7 +6,7 @@ in which the [Low Poly Rat](https://sketchfab.com/3d-models/low-poly-rat-dd63402
 model by [Tyler Lazzareschi](https://sketchfab.com/tylerlazzareschi) turns
 slowly in 3D.
 
-![The Rat panel docked on the right of OpenChamber](docs/rat-panel.png)
+![Rat's Rail panel docked on the right of OpenChamber](docs/rat-panel.png)
 
 - The panel follows OpenChamber's light and dark themes.
 - It works offline: the renderer, the model and its textures are all inside

@@ -19,6 +19,11 @@ export const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '
 export const EXPECTED_HOST_VERSION = '2.3.3';
 const PROBE_PATH = path.join(root, 'tests', 'acceptance', 'probe.js');
 
+/** Model attribution links: the artwork, its creator and its license. */
+export const MODEL_URL = 'https://sketchfab.com/3d-models/low-poly-rat-dd63402df69742e39e989801f282e58a';
+export const AUTHOR_URL = 'https://sketchfab.com/tylerlazzareschi';
+export const LICENSE_URL = 'https://creativecommons.org/licenses/by/4.0/';
+
 /** The ZIP under test: the committed deliverable unless `RAT_TEST_ZIP` names another. */
 export const deliverableZip = async () => process.env.RAT_TEST_ZIP ?? distZipPath();
 
@@ -99,7 +104,7 @@ export const launchBrowser = ({ args = [] } = {}) => chromium.launch({
 });
 
 const isLoopback = (url) => ['127.0.0.1', 'localhost', '[::1]'].includes(new URL(url).hostname);
-const isRatFrame = (frame) => frame.url().includes('/api/guests/rat/');
+export const isRatFrame = (frame) => frame.url().includes('/api/guests/rat/');
 
 /**
  * A browser context with every non-loopback request blocked, the Rat probe
@@ -162,7 +167,7 @@ export const ratFrame = async (page) => {
     }
     await page.waitForTimeout(100);
   }
-  throw new Error('The Rat panel frame did not appear.');
+  throw new Error("Rat's Rail panel frame did not appear.");
 };
 
 /** Clicks the rail entry and waits until the panel's scene has drawn. */
@@ -178,8 +183,8 @@ export const probe = (frame) => frame.evaluate(() => {
   return { ...counts, pending: pending.size };
 });
 
-/** Probe counts at the start and end of `ms` of waiting. */
-export const watch = async (page, frame, ms) => {
+/** Probe counts at the start and end of `ms` of waiting, and the frames drawn in between. */
+export const sampleDrawing = async (page, frame, ms) => {
   const before = await probe(frame);
   await page.waitForTimeout(ms);
   const after = await probe(frame);

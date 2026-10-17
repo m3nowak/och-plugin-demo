@@ -86,7 +86,7 @@ describe('Rat when it cannot draw', () => {
     await rm(workDir, { recursive: true, force: true });
   });
 
-  test('explains that WebGL is unavailable and keeps the attribution', async () => {
+  test('explains that WebGL is unavailable and keeps the model attribution', async () => {
     const result = await showFailure({ zipPath: deliverable, browserArgs: ['--disable-3d-apis'] });
     assertReadableFailure(result, /^The 3D view needs WebGL, which is not available here\.$/);
   });

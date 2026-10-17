@@ -1,4 +1,4 @@
-// Injected into every frame by the acceptance tests. Inside the Rat panel it
+// Injected into every frame by the acceptance tests. Inside Rat's Rail panel it
 // records what the extension asks of the browser, so the tests can tell the
 // extension's own animation loop apart from the browser throttling a hidden
 // frame. It changes no behaviour.
